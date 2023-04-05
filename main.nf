@@ -1,6 +1,7 @@
 params.str = 'Hello world!'
 
 process splitLetters {
+  container 'nextflow/nextflow:22.10.5'
   output:
     path 'chunk_*'
 
@@ -10,6 +11,7 @@ process splitLetters {
 }
 
 process convertToUpper {
+  container 'nextflow/nextflow:22.10.5'
   input:
     path x
   output:
