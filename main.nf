@@ -1,3 +1,4 @@
+nextflow.enable.dsl=2
 params.str = 'Hello world!'
 
 process splitLetters {
@@ -25,4 +26,3 @@ process convertToUpper {
 workflow {
   splitLetters | flatten | convertToUpper | view { it.trim() }
 }
-
