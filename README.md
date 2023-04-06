@@ -28,17 +28,17 @@ $ module list
 
 Clone ARCCA Nextflow turorial for k8s:
 ```
-$ git clone https://github.com/ARCCA/nextflow-tutorial.git
+$ git clone https://github.com/ARCCA/nextflow-tutorial-k8s.git
 ```
 
 At this point you should be able to run the pipeline test:
 ```
-$ nextflow kuberun -latest josemunozc/nextflow-tutorial -profile k8s -n nextflow
+$ nextflow kuberun -latest ARCCA/nextflow-tutorial-k8s -profile k8s -n nextflow
 Pod started: lonely-perlman
 N E X T F L O W  ~  version 21.10.6
-Pulling josemunozc/nextflow-tutorial ...
+Pulling ARCCA/nextflow-tutorial-k8s ...
  Already-up-to-date
-Launching `josemunozc/nextflow-tutorial` [lonely-perlman] - revision: c32a5e1ac4 [master]
+Launching `ARCCA/nextflow-tutorial-k8s` [lonely-perlman] - revision: c32a5e1ac4 [master]
 [e6/f1caf5] Submitted process > splitLetters
 [77/82b6b1] Submitted process > convertToUpper (1)
 [c3/c14fe2] Submitted process > convertToUpper (2)
@@ -82,7 +82,7 @@ chunk_aa  chunk_ab
 
 ## Making changes (untested).
 Assuming you have a GitHub account, create a fork of this repo. Go to 
-https://github.com/ARCCA/nextflow-tutorial  and click on 'fork', follow the 
+https://github.com/ARCCA/nextflow-tutorial-k8s and click on 'fork', follow the 
 instructions to create the fork in your own repo.
 
 - clone your fork repo on Hawk:
