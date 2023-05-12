@@ -103,6 +103,66 @@ process raw_fastqc {
     """
 }
 
+// run fastqc on trimmed fastq
+
+process trimmed_fastqc {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus 1
+
+    tag "Running fastQC on trimmed fastq"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from trimmedfastq1_ch
+
+    output:
+    file("${sampleID}") into fastqontrimmed_ch
+
+    script:
+    """
+    sleep ${params.sleepTimeStart}
+
+    fastqc -o ${sampleID} ${sampleID}/${sampleID}.trimmed_1.fastq.gz
+
+    fastqc -o ${sampleID} ${sampleID}/${sampleID}.trimmed_2.fastq.gz
+
+    sleep ${params.sleepTimeEnd}
+    """
+}
+
+// run multiqc on all fastqc results
+
+process multiqc {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus 1
+
+    tag "Running multiqc on fastqc reports"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file dummy from fastqontrimmed_ch.collect()
+
+    output:
+    file("multiQC.html") into multiqc1_ch
+
+    script:
+    """
+    sleep ${params.sleepTimeStart}
+
+    linkDir=\$(mktemp -d ci-XXXXXXXXXX --tmpdir="${params.projectDir}")
+
+    bash ${params.projectDir}/${params.srcDir}/uber_copy.sh ${params.projectDir}/trace.txt ${params.projectDir}/work/ ${params.projectDir}/${params.outputDir} \$linkDir trimmed_fastqc
+
+    multiqc \$linkDir -n multiQC
+
+    rm -r \$linkDir
+
+    sleep ${params.sleepTimeEnd}
+    """
+}
+
+
+
 
 // nextflow.enable.dsl=2
 // params.str = 'Hello world!'
