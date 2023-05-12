@@ -182,7 +182,6 @@ process sequencelength {
 
 process copy_genome {
     cpus 1
-    time params.copyGenomeJobLength
 
     tag "Copying genome file into resources/"
     publishDir path:{params.resourcesDir},mode: 'symlink'
