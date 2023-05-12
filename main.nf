@@ -194,7 +194,7 @@ process copy_genome {
     """
     sleep ${params.sleepTimeStart}
 
-    cp ${launchDir}/resurces/assembly/${params.genomeName} .
+    cp ${launchDir}/resources/assembly/${params.genomeName} .
 
     sleep ${params.sleepTimeEnd}
     """
