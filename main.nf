@@ -75,7 +75,33 @@ process trimgalore {
     """
 }
 
+// run fastqc on raw fastq
 
+process raw_fastqc {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+
+    cpus 1
+
+    tag "Running fastQC on raw fastq"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from concatfastq2_ch
+
+    output:
+    file("${sampleID}") into fastqonraw_ch
+
+    script:
+    """ 
+    sleep ${params.sleepTimeStart}
+
+    fastqc -o ${sampleID} ${sampleID}/${sampleID}_1.fastq.gz
+
+    fastqc -o ${sampleID} ${sampleID}/${sampleID}_2.fastq.gz
+
+    sleep ${params.sleepTimeEnd}
+    """
+}
 
 
 // nextflow.enable.dsl=2
