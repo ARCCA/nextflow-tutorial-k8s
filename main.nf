@@ -45,6 +45,37 @@ process concatentate_and_rename_fastq {
     """
 }
 
+// run trim galore
+
+process trimgalore {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus params.trimgaloreJobCpus
+
+    tag "Running trim galore on the samples"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from concatfastq1_ch
+
+    output:
+    file("${sampleID}") into trimmedfastq1_ch
+    file("${sampleID}") into trimmedfastq2_ch
+
+    script:
+    """
+    sleep ${params.sleepTimeStart}
+
+    trim_galore --cores ${params.trimgaloreJobCpus} -o ${sampleID} --paired ${sampleID}/${sampleID}_1.fastq.gz ${sampleID}/${sampleID}_2.fastq.gz
+
+    mv ${sampleID}/${sampleID}_1_val_1.fq.gz ${sampleID}/${sampleID}.trimmed_1.fastq.gz
+
+    mv ${sampleID}/${sampleID}_2_val_2.fq.gz ${sampleID}/${sampleID}.trimmed_2.fastq.gz
+
+    sleep ${params.sleepTimeEnd}
+    """
+}
+
+
 
 
 // nextflow.enable.dsl=2
