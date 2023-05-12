@@ -205,7 +205,6 @@ process copy_genome {
 process copy_gtf {
     container 'munozcriollojj/nf-pipeline-test:latest'
     cpus 1
-    time params.copyGTFJobLength
 
     tag "Copying gtf file into resources/"
     publishDir path:{params.resourcesDir},mode: 'symlink'
