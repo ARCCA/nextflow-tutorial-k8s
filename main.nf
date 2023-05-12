@@ -151,7 +151,7 @@ process multiqc {
 
     linkDir=\$(mktemp -d ci-XXXXXXXXXX --tmpdir="${params.projectDir}")
 
-    bash ${params.projectDir}/${params.srcDir}/uber_copy.sh ${params.projectDir}/trace.txt ${launchDir}/work ${launchDir}/${params.outputDir} \$linkDir trimmed_fastqc
+    bash ${params.projectDir}/${params.srcDir}/uber_copy.sh ${launchDir}/trace.txt ${launchDir}/work ${launchDir}/${params.outputDir} \$linkDir trimmed_fastqc
 
     multiqc \$linkDir -n multiQC
 
