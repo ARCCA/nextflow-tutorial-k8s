@@ -161,8 +161,44 @@ process multiqc {
     """
 }
 
+// get sequence length for STAR parameter
 
+process sequencelength {
+    container 'munozcriollojj/nf-pipeline-test:latest'
 
+    tag "Calculating sequence length for STAR genome index"
+    publishDir path:{params.resourcesDir},mode: 'symlink'
+
+    output:
+    file("seqlen.txt") into sequencelength_ch
+
+    script:
+    """
+    bash ${params.projectDir}/${params.srcDir}/calculate_fastq_sequence_length.sh ${params.dataDir} > seqlen.txt
+    """
+}
+
+// copy genome assembly file into resources
+
+process copy_genome {
+    cpus 1
+    time params.copyGenomeJobLength
+
+    tag "Copying genome file into resources/"
+    publishDir path:{params.resourcesDir},mode: 'symlink'
+
+    output:
+    file("${params.genomeName}") into genome_ch
+
+    script:
+    """
+    sleep ${params.sleepTimeStart}
+
+    cp ${params.genome} .
+
+    sleep ${params.sleepTimeEnd}
+    """
+}
 
 // nextflow.enable.dsl=2
 // params.str = 'Hello world!'
