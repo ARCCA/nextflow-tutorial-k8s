@@ -181,6 +181,7 @@ process sequencelength {
 // copy genome assembly file into resources
 
 process copy_genome {
+    container 'munozcriollojj/nf-pipeline-test:latest'
     cpus 1
 
     tag "Copying genome file into resources/"
