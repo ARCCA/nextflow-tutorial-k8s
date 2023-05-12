@@ -200,31 +200,56 @@ process copy_genome {
     """
 }
 
-// nextflow.enable.dsl=2
-// params.str = 'Hello world!'
-// 
-// process splitLetters {
-//   container 'nextflow/nextflow:21.10.6'
-//   output:
-//     path 'chunk_*'
-// 
-//   """
-//   printf '${params.str}' | split -b 6 - chunk_
-//   """
-// }
-// 
-// process convertToUpper {
-//   container 'nextflow/nextflow:21.10.6'
-//   input:
-//     path x
-//   output:
-//     stdout
-// 
-//   """
-//   cat $x | tr '[a-z]' '[A-Z]'
-//   """
-// }
-// 
-// workflow {
-//   splitLetters | flatten | convertToUpper | view { it.trim() }
-// }
+// copy GTF file into resources
+
+process copy_gtf {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus 1
+    time params.copyGTFJobLength
+
+    tag "Copying gtf file into resources/"
+    publishDir path:{params.resourcesDir},mode: 'symlink'
+
+    output:
+    file("*") into gtf2_ch
+    file("*") into gtf3_ch
+    file("*") into gtf4_ch
+
+    script:
+    """
+    sleep ${params.sleepTimeStart}
+
+    cp ${launchDir}/resources/gtf/${params.gtfName} .
+
+    sleep ${params.sleepTimeEnd}
+    """
+}
+
+// create STAR genome index
+
+process genome_index {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus params.genomeIndexJobCpus
+
+    tag "Indexing genome using STAR"
+    publishDir path:{params.resourcesDir},mode: 'symlink'
+
+    input:
+    file gtf from gtf2_ch
+    file genome from genome_ch
+    file seqlen from sequencelength_ch
+
+    output:
+    file "genome_index" into genomeindex_ch
+
+    script:
+    """
+    sleep ${params.sleepTimeStart}
+
+    mkdir genome_index
+
+    STAR --runThreadN ${params.genomeIndexJobCpus} --runMode genomeGenerate --genomeDir genome_index --genomeFastaFiles ${genome} --sjdbGTFfile ${gtf} --sjdbOverhang `cat ${seqlen}`
+
+    sleep ${params.sleepTimeEnd}
+    """
+}
