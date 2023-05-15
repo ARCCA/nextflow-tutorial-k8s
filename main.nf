@@ -252,3 +252,66 @@ process genome_index {
     sleep ${params.sleepTimeEnd}
     """
 }
+
+// run STAR mapping
+
+process star_mapping {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus params.starMappingJobCpus
+
+    tag "Mapping trimmed fastq with STAR"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from trimmedfastq2_ch
+    file genomeIndex from genomeindex_ch
+
+    output:
+    file("${sampleID}") into bam_ch
+
+    script:
+    """
+    sleep ${params.sleepTimeStart}
+
+    STAR --readFilesCommand zcat --runThreadN ${params.starMappingJobCpus} --runMode alignReads --outSAMunmapped Within KeepPairs --outMultimapperOrder Random --outSAMmultNmax 1 --quantMode GeneCounts --outSAMtype BAM SortedByCoordinate --outFileNamePrefix ${sampleID}/${sampleID}.randomonemap. --genomeDir ${genomeIndex} --readFilesIn ${sampleID}/${sampleID}.trimmed_1.fastq.gz ${sampleID}/${sampleID}.trimmed_2.fastq.gz
+
+    sleep ${params.sleepTimeEnd}
+    """
+}
+
+// mark duplicate reads in STAR bam
+
+process markduplicates {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus params.markDuplicatesCpus
+
+    tag "Running markduplicates sorted bams using picard"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from bam_ch
+
+    output:
+    file("${sampleID}") into markdupbam1_ch
+    file("${sampleID}") into markdupbam2_ch
+    file("${sampleID}") into markdupbam4_ch
+
+    script:
+    """
+    sleep ${params.sleepTimeStart}
+
+    java -jar -Xmx40G ${params.picardExecutable} MarkDuplicates I=${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam O=${sampleID}/${sampleID}.markdup.bam M=${sampleID}/${sampleID}.markdup.txt REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT
+
+    java -jar -Xmx40G ${params.picardExecutable} MarkDuplicates I=${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam O=${sampleID}/${sampleID}.rmdup.bam M=${sampleID}/${sampleID}.rmdup.txt REMOVE_DUPLICATES=true VALIDATION_STRINGENCY=SILENT
+
+    samtools index ${sampleID}/${sampleID}.markdup.bam
+
+    samtools index ${sampleID}/${sampleID}.rmdup.bam
+
+    samtools sort -n ${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam -o ${sampleID}/${sampleID}.markdup.namesorted.bam
+
+    samtools sort -n ${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam -o ${sampleID}/${sampleID}.rmdup.namesorted.bam
+
+    sleep ${params.sleepTimeEnd}
+    """
+}
