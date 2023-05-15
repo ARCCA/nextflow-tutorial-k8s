@@ -315,3 +315,53 @@ process markduplicates {
     sleep ${params.sleepTimeEnd}
     """
 }
+
+// run bamtools stats on marked bams
+
+process bamtools {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+
+    tag "Running bamtools on markdup bams"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from markdupbam1_ch
+
+    output:
+    file("${sampleID}") into bamtools_ch
+
+    script:
+    """
+    sleep ${params.sleepTimeStart}
+
+    bamtools stats -in ${sampleID}/${sampleID}.markdup.bam > ${sampleID}/${sampleID}.markdup.stats.txt
+
+    sleep ${params.sleepTimeEnd}
+    """
+
+}
+
+// run picard stats
+
+process collect_insert_size_metrics {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus 1
+
+    tag "Running picard collect insert size metrics on markdup bams"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from bamtools_ch
+
+    output:
+    file("${sampleID}") into picardmetrics_ch
+
+    script:
+    """
+    sleep ${params.sleepTimeStart}
+
+    java -jar -Xmx40G ${params.picardExecutable} CollectInsertSizeMetrics I=${sampleID}/${sampleID}.markdup.bam H=${sampleID}/${sampleID}.markdup.picardstats.out O=${sampleID}/${sampleID}.markdup.picardstats.txt VALIDATION_STRINGENCY=SILENT
+
+    sleep ${params.sleepTimeEnd}
+    """
+}
