@@ -263,68 +263,71 @@ process star_mapping {
     """
 }
 
-//// mark duplicate reads in STAR bam
-//
-//process markduplicates {
-//    container 'munozcriollojj/nf-pipeline-test:latest'
-//    cpus params.markDuplicatesCpus
-//
-//    tag "Running markduplicates sorted bams using picard"
-//    publishDir path:{params.outputDir},mode: 'symlink'
-//
-//    input:
-//    file sampleID from bam_ch
-//
-//    output:
-//    file("${sampleID}") into markdupbam1_ch
-//    file("${sampleID}") into markdupbam2_ch
-//    file("${sampleID}") into markdupbam4_ch
-//
-//    script:
-//    """
-//    sleep ${params.sleepTimeStart}
-//
-//    java -jar -Xmx40G ${params.picardExecutable} MarkDuplicates I=${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam O=${sampleID}/${sampleID}.markdup.bam M=${sampleID}/${sampleID}.markdup.txt REMOVE_DUPLICATES=false VALIDATION_STRINGENCY=SILENT
-//
-//    java -jar -Xmx40G ${params.picardExecutable} MarkDuplicates I=${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam O=${sampleID}/${sampleID}.rmdup.bam M=${sampleID}/${sampleID}.rmdup.txt REMOVE_DUPLICATES=true VALIDATION_STRINGENCY=SILENT
-//
-//    samtools index ${sampleID}/${sampleID}.markdup.bam
-//
-//    samtools index ${sampleID}/${sampleID}.rmdup.bam
-//
-//    samtools sort -n ${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam -o ${sampleID}/${sampleID}.markdup.namesorted.bam
-//
-//    samtools sort -n ${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam -o ${sampleID}/${sampleID}.rmdup.namesorted.bam
-//
-//    sleep ${params.sleepTimeEnd}
-//    """
-//}
-//
-//// run bamtools stats on marked bams
-//
-//process bamtools {
-//    container 'munozcriollojj/nf-pipeline-test:latest'
-//
-//    tag "Running bamtools on markdup bams"
-//    publishDir path:{params.outputDir},mode: 'symlink'
-//
-//    input:
-//    file sampleID from markdupbam1_ch
-//
-//    output:
-//    file("${sampleID}") into bamtools_ch
-//
-//    script:
-//    """
-//    sleep ${params.sleepTimeStart}
-//
-//    bamtools stats -in ${sampleID}/${sampleID}.markdup.bam > ${sampleID}/${sampleID}.markdup.stats.txt
-//
-//    sleep ${params.sleepTimeEnd}
-//    """
-//
-//}
-//
+// mark duplicate reads in STAR bam
+process markduplicates {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus params.markDuplicatesCpus
+
+    tag "Running markduplicates sorted bams using picard"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from bam_ch
+
+    output:
+    file("${sampleID}") into markdupbam1_ch
+    file("${sampleID}") into markdupbam2_ch
+    file("${sampleID}") into markdupbam4_ch
+
+    script:
+    """
+    java -jar -Xmx40G ${params.picardExecutable} MarkDuplicates \
+      I=${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam \
+      O=${sampleID}/${sampleID}.markdup.bam \
+      M=${sampleID}/${sampleID}.markdup.txt \
+      REMOVE_DUPLICATES=false \
+      VALIDATION_STRINGENCY=SILENT
+
+    java -jar -Xmx40G ${params.picardExecutable} MarkDuplicates \
+      I=${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam \
+      O=${sampleID}/${sampleID}.rmdup.bam \
+      M=${sampleID}/${sampleID}.rmdup.txt \
+      REMOVE_DUPLICATES=true \
+      VALIDATION_STRINGENCY=SILENT
+
+    samtools index ${sampleID}/${sampleID}.markdup.bam
+    samtools index ${sampleID}/${sampleID}.rmdup.bam
+
+    samtools sort \
+      -n ${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam \
+      -o ${sampleID}/${sampleID}.markdup.namesorted.bam
+
+    samtools sort \
+      -n ${sampleID}/${sampleID}.randomonemap.Aligned.sortedByCoord.out.bam \
+      -o ${sampleID}/${sampleID}.rmdup.namesorted.bam
+    """
+}
+
+// run bamtools stats on marked bams
+process bamtools {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+
+    tag "Running bamtools on markdup bams"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from markdupbam1_ch
+
+    output:
+    file("${sampleID}") into bamtools_ch
+
+    script:
+    """
+    bamtools stats \
+      -in ${sampleID}/${sampleID}.markdup.bam > ${sampleID}/${sampleID}.markdup.stats.txt
+    """
+}
+
 //// run picard stats
 //
 //process collect_insert_size_metrics {
