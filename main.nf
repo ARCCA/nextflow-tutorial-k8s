@@ -328,128 +328,170 @@ process bamtools {
     """
 }
 
-//// run picard stats
-//
-//process collect_insert_size_metrics {
-//    container 'munozcriollojj/nf-pipeline-test:latest'
-//    cpus 1
-//
-//    tag "Running picard collect insert size metrics on markdup bams"
-//    publishDir path:{params.outputDir},mode: 'symlink'
-//
-//    input:
-//    file sampleID from bamtools_ch
-//
-//    output:
-//    file("${sampleID}") into picardmetrics_ch
-//
-//    script:
-//    """
-//    sleep ${params.sleepTimeStart}
-//
-//    java -jar -Xmx40G ${params.picardExecutable} CollectInsertSizeMetrics I=${sampleID}/${sampleID}.markdup.bam H=${sampleID}/${sampleID}.markdup.picardstats.out O=${sampleID}/${sampleID}.markdup.picardstats.txt VALIDATION_STRINGENCY=SILENT
-//
-//    sleep ${params.sleepTimeEnd}
-//    """
-//}
-//
-//// make bamtools report
-//
-//process run_bamtools_report {
-//    container 'munozcriollojj/nf-pipeline-test:latest'
-//    cpus 1
-//
-//    tag "Collating results from bamtools"
-//    publishDir path:{params.outputDir},mode: 'symlink'
-//
-//    input:
-//    file dummy1 from picardmetrics_ch.collect()
-//
-//    output:
-//    file("*.txt") into bamtoolsreport_ch
-//
-//    script:
-//    """
-//    sleep ${params.sleepTimeStart}
-//
-//    linkDir=\$(mktemp -d ci-XXXXXXXXXX --tmpdir="${params.projectDir}")
-//
-//    bash ${params.projectDir}/${params.srcDir}/uber_copy.sh ${launchDir}/trace.txt ${launchDir}/work ${launchDir}/${params.outputDir} \$linkDir raw_fastqc
-//    bash ${params.projectDir}/${params.srcDir}/uber_copy.sh ${launchDir}/trace.txt ${launchDir}/work ${launchDir}/${params.outputDir} \$linkDir bamtools
-//    bash ${params.projectDir}/${params.srcDir}/uber_copy.sh ${launchDir}/trace.txt ${launchDir}/work ${launchDir}/${params.outputDir} \$linkDir collect_insert_size_metrics 
-//
-//    ${params.projectDir}/${params.srcDir}/collate_bamtools_and_picard_output.pl ${params.dataDir}/targets.csv ${params.projectDir} ${launchDir}/${params.outputDir} \$linkDir
-//
-//    rm -r \$linkDir
-//
-//    sleep ${params.sleepTimeEnd}
-//    """
-//}
-//
-//// count reads for all genes and transcripts using featureCounts
-//
-//process featurecounts {
-//    container 'munozcriollojj/nf-pipeline-test:latest'
-//    cpus params.featureCountsJobCpus 
-//
-//    tag "Running featurecounts for all genes and transcripts"
-//    publishDir path:{params.outputDir},mode: 'symlink'
-//
-//    input:
-//    file sampleID from markdupbam2_ch
-//    file gtf from gtf3_ch
-//
-//    output:
-//    file("${sampleID}") into featurecounts_ch
-//
-//    script:
-//    """
-//    sleep ${params.sleepTimeStart}
-//
-//    featureCounts -T ${params.featureCountsJobCpus} -O -p -F GTF -t exon -g gene_id -a ${gtf} -o ${sampleID}/${sampleID}.markdup.genecount.txt ${sampleID}/${sampleID}.markdup.bam
-//
-//    featureCounts -T ${params.featureCountsJobCpus} -O -p -F GTF -t exon -g gene_id -a ${gtf} -o ${sampleID}/${sampleID}.rmdup.genecount.txt ${sampleID}/${sampleID}.rmdup.bam
-//
-//    featureCounts -T ${params.featureCountsJobCpus} -O -p -F GTF -t exon -g transcript_id -a ${gtf} -o ${sampleID}/${sampleID}.markdup.transcriptcount.txt ${sampleID}/${sampleID}.markdup.bam
-//
-//    featureCounts -T ${params.featureCountsJobCpus} -O -p -F GTF -t exon -g transcript_id -a ${gtf} -o ${sampleID}/${sampleID}.rmdup.transcriptcount.txt ${sampleID}/${sampleID}.rmdup.bam
-//
-//    sleep ${params.sleepTimeEnd}
-//    """
-//}
-//
-//// make count report
-//
-//process run_featurecounts_report {
-//    container 'munozcriollojj/nf-pipeline-test:latest'
-//    cpus 1
-//
-//    tag "Collating results from featureCounts"
-//    publishDir path:{params.outputDir},mode: 'symlink'
-//
-//    input:
-//    file dummy from featurecounts_ch.collect()
-//    file gtf from gtf4_ch
-//
-//    output:
-//    file("all*.txt") into featurecountsreport_ch
-//
-//    script:
-//    """
-//    sleep ${params.sleepTimeStart}
-//
-//    linkDir=\$(mktemp -d ci-XXXXXXXXXX --tmpdir="${params.projectDir}")
-//
-//    bash ${params.projectDir}/${params.srcDir}/uber_copy.sh ${launchDir}/trace.txt ${launchDir}/work ${launchDir}/${params.outputDir} \$linkDir featurecounts
-//
-//    ${params.projectDir}/${params.srcDir}/collate_featurecounts_output.pl ${params.dataDir}/targets.csv ${params.projectDir} ${launchDir}/${params.outputDir} ${launchDir}/${params.resourcesDir} ${gtfName} \$linkDir
-//
-//    rm -r \$linkDir
-//
-//    sleep ${params.sleepTimeEnd}
-//    """
-//}
-//
+// run picard stats
+process collect_insert_size_metrics {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus 1
+
+    tag "Running picard collect insert size metrics on markdup bams"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from bamtools_ch
+
+    output:
+    file("${sampleID}") into picardmetrics_ch
+
+    script:
+    """
+    java -jar -Xmx40G ${params.picardExecutable} CollectInsertSizeMetrics \
+      I=${sampleID}/${sampleID}.markdup.bam \
+      H=${sampleID}/${sampleID}.markdup.picardstats.out \
+      O=${sampleID}/${sampleID}.markdup.picardstats.txt \
+      VALIDATION_STRINGENCY=SILENT
+    """
+}
+
+// make bamtools report
+process run_bamtools_report {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus 1
+
+    tag "Collating results from bamtools"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file dummy1 from picardmetrics_ch.collect()
+
+    output:
+    file("*.txt") into bamtoolsreport_ch
+
+    script:
+    """
+    linkDir=\$(mktemp -d ci-XXXXXXXXXX --tmpdir="${params.projectDir}")
+
+    bash ${params.projectDir}/${params.srcDir}/uber_copy.sh \
+      ${launchDir}/trace.txt \
+      ${launchDir}/work \
+      ${launchDir}/${params.outputDir} \
+      \$linkDir raw_fastqc
+    bash ${params.projectDir}/${params.srcDir}/uber_copy.sh \
+      ${launchDir}/trace.txt \
+      ${launchDir}/work \
+      ${launchDir}/${params.outputDir} \
+      \$linkDir bamtools
+    bash ${params.projectDir}/${params.srcDir}/uber_copy.sh \
+      ${launchDir}/trace.txt \
+      ${launchDir}/work \
+      ${launchDir}/${params.outputDir} \
+      \$linkDir collect_insert_size_metrics 
+
+    ${params.projectDir}/${params.srcDir}/collate_bamtools_and_picard_output.pl \
+      ${params.dataDir}/targets.csv \
+      ${params.projectDir} \
+      ${launchDir}/${params.outputDir} \
+      \$linkDir
+
+    rm -r \$linkDir
+    """
+}
+
+// count reads for all genes and transcripts using featureCounts
+process featurecounts {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus params.featureCountsJobCpus 
+
+    tag "Running featurecounts for all genes and transcripts"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from markdupbam2_ch
+    file gtf from gtf3_ch
+
+    output:
+    file("${sampleID}") into featurecounts_ch
+
+    script:
+    """
+    featureCounts \
+      -T ${params.featureCountsJobCpus} \
+      -O -p \
+      -F GTF i\
+      -t exon \
+      -g gene_id \
+      -a ${gtf} \
+      -o ${sampleID}/${sampleID}.markdup.genecount.txt \
+         ${sampleID}/${sampleID}.markdup.bam
+
+    featureCounts \
+      -T ${params.featureCountsJobCpus} \
+      -O -p \
+      -F GTF \
+      -t exon \
+      -g gene_id \
+      -a ${gtf} \
+      -o ${sampleID}/${sampleID}.rmdup.genecount.txt \
+         ${sampleID}/${sampleID}.rmdup.bam
+
+    featureCounts \
+      -T ${params.featureCountsJobCpus} \
+      -O -p \
+      -F GTF \
+      -t exon \
+      -g transcript_id \
+      -a ${gtf} \
+      -o ${sampleID}/${sampleID}.markdup.transcriptcount.txt \
+         ${sampleID}/${sampleID}.markdup.bam
+
+    featureCounts \
+      -T ${params.featureCountsJobCpus} \
+      -O -p \
+      -F GTF \
+      -t exon \
+      -g transcript_id \
+      -a ${gtf} \
+      -o ${sampleID}/${sampleID}.rmdup.transcriptcount.txt \
+         ${sampleID}/${sampleID}.rmdup.bam
+    """
+}
+
+// make count report
+process run_featurecounts_report {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus 1
+
+    tag "Collating results from featureCounts"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file dummy from featurecounts_ch.collect()
+    file gtf from gtf4_ch
+
+    output:
+    file("all*.txt") into featurecountsreport_ch
+
+    script:
+    """
+    linkDir=\$(mktemp -d ci-XXXXXXXXXX --tmpdir="${params.projectDir}")
+
+    bash ${params.projectDir}/${params.srcDir}/uber_copy.sh \
+      ${launchDir}/trace.txt \
+      ${launchDir}/work \
+      ${launchDir}/${params.outputDir} \
+      \$linkDir featurecounts
+
+    ${params.projectDir}/${params.srcDir}/collate_featurecounts_output.pl \
+      ${params.dataDir}/targets.csv \
+      ${launchDir} \
+      ${params.outputDir} \
+      ${params.resourcesDir} \
+      ${gtfName} \
+      \$linkDir
+
+    rm -r \$linkDir
+    """
+}
+
 //// make release directory
 //
 //process make_release {
