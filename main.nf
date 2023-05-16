@@ -416,7 +416,7 @@ process featurecounts {
     featureCounts \
       -T ${params.featureCountsJobCpus} \
       -O -p \
-      -F GTF i\
+      -F GTF \
       -t exon \
       -g gene_id \
       -a ${gtf} \
