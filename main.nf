@@ -199,61 +199,70 @@ process copy_gtf {
     """
 }
 
-//// create STAR genome index
-//
-//process genome_index {
-//    container 'munozcriollojj/nf-pipeline-test:latest'
-//    cpus params.genomeIndexJobCpus
-//
-//    tag "Indexing genome using STAR"
-//    publishDir path:{params.resourcesDir},mode: 'symlink'
-//
-//    input:
-//    file gtf from gtf2_ch
-//    file genome from genome_ch
-//    file seqlen from sequencelength_ch
-//
-//    output:
-//    file "genome_index" into genomeindex_ch
-//
-//    script:
-//    """
-//    sleep ${params.sleepTimeStart}
-//
-//    mkdir genome_index
-//
-//    STAR --runThreadN ${params.genomeIndexJobCpus} --runMode genomeGenerate --genomeDir genome_index --genomeFastaFiles ${genome} --sjdbGTFfile ${gtf} --sjdbOverhang `cat ${seqlen}`
-//
-//    sleep ${params.sleepTimeEnd}
-//    """
-//}
-//
-//// run STAR mapping
-//
-//process star_mapping {
-//    container 'munozcriollojj/nf-pipeline-test:latest'
-//    cpus params.starMappingJobCpus
-//
-//    tag "Mapping trimmed fastq with STAR"
-//    publishDir path:{params.outputDir},mode: 'symlink'
-//
-//    input:
-//    file sampleID from trimmedfastq2_ch
-//    file genomeIndex from genomeindex_ch
-//
-//    output:
-//    file("${sampleID}") into bam_ch
-//
-//    script:
-//    """
-//    sleep ${params.sleepTimeStart}
-//
-//    STAR --readFilesCommand zcat --runThreadN ${params.starMappingJobCpus} --runMode alignReads --outSAMunmapped Within KeepPairs --outMultimapperOrder Random --outSAMmultNmax 1 --quantMode GeneCounts --outSAMtype BAM SortedByCoordinate --outFileNamePrefix ${sampleID}/${sampleID}.randomonemap. --genomeDir ${genomeIndex} --readFilesIn ${sampleID}/${sampleID}.trimmed_1.fastq.gz ${sampleID}/${sampleID}.trimmed_2.fastq.gz
-//
-//    sleep ${params.sleepTimeEnd}
-//    """
-//}
-//
+// create STAR genome index
+
+process genome_index {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus params.genomeIndexJobCpus
+
+    tag "Indexing genome using STAR"
+    publishDir path:{params.resourcesDir},mode: 'symlink'
+
+    input:
+    file gtf from gtf2_ch
+    file genome from genome_ch
+    file seqlen from sequencelength_ch
+
+    output:
+    file "genome_index" into genomeindex_ch
+
+    script:
+    """
+    mkdir genome_index
+
+    STAR \
+      --runThreadN ${params.genomeIndexJobCpus} \
+      --runMode genomeGenerate \
+      --genomeDir genome_index \
+      --genomeFastaFiles ${genome} \
+      --sjdbGTFfile ${gtf} \
+      --sjdbOverhang `cat ${seqlen}`
+    """
+}
+
+// run STAR mapping
+process star_mapping {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus params.starMappingJobCpus
+
+    tag "Mapping trimmed fastq with STAR"
+    publishDir path:{params.outputDir},mode: 'symlink'
+
+    input:
+    file sampleID from trimmedfastq2_ch
+    file genomeIndex from genomeindex_ch
+
+    output:
+    file("${sampleID}") into bam_ch
+
+    script:
+    """
+    STAR \
+      --readFilesCommand zcat \
+      --runThreadN ${params.starMappingJobCpus} \
+      --runMode alignReads \
+      --outSAMunmapped Within KeepPairs \
+      --outMultimapperOrder Random \
+      --outSAMmultNmax 1 \
+      --quantMode GeneCounts \
+      --outSAMtype BAM SortedByCoordinate \
+      --outFileNamePrefix ${sampleID}/${sampleID}.randomonemap. \
+      --genomeDir ${genomeIndex} \
+      --readFilesIn ${sampleID}/${sampleID}.trimmed_1.fastq.gz \
+                    ${sampleID}/${sampleID}.trimmed_2.fastq.gz
+    """
+}
+
 //// mark duplicate reads in STAR bam
 //
 //process markduplicates {
