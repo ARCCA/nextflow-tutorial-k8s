@@ -485,7 +485,7 @@ process run_featurecounts_report {
       ${launchDir} \
       ${params.outputDir} \
       ${params.resourcesDir} \
-      ${gtfName} \
+      ${gtf} \
       \$linkDir
 
     rm -r \$linkDir
