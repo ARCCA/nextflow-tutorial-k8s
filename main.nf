@@ -163,52 +163,42 @@ process sequencelength {
     """
 }
 
-//// copy genome assembly file into resources
-//
-//process copy_genome {
-//    container 'munozcriollojj/nf-pipeline-test:latest'
-//    cpus 1
-//
-//    tag "Copying genome file into resources/"
-//    publishDir path:{params.resourcesDir},mode: 'symlink'
-//
-//    output:
-//    file("${params.genomeName}") into genome_ch
-//
-//    script:
-//    """
-//    sleep ${params.sleepTimeStart}
-//
-//    cp ${launchDir}/resources/assembly/${params.genomeName} .
-//
-//    sleep ${params.sleepTimeEnd}
-//    """
-//}
-//
-//// copy GTF file into resources
-//
-//process copy_gtf {
-//    container 'munozcriollojj/nf-pipeline-test:latest'
-//    cpus 1
-//
-//    tag "Copying gtf file into resources/"
-//    publishDir path:{params.resourcesDir},mode: 'symlink'
-//
-//    output:
-//    file("*") into gtf2_ch
-//    file("*") into gtf3_ch
-//    file("*") into gtf4_ch
-//
-//    script:
-//    """
-//    sleep ${params.sleepTimeStart}
-//
-//    cp ${launchDir}/resources/gtf/${params.gtfName} .
-//
-//    sleep ${params.sleepTimeEnd}
-//    """
-//}
-//
+// copy genome assembly file into resources
+process copy_genome {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus 1
+
+    tag "Copying genome file into resources/"
+    publishDir path:{params.resourcesDir},mode: 'symlink'
+
+    output:
+    file("${params.genomeName}") into genome_ch
+
+    script:
+    """
+    cp ${launchDir}/resources/assembly/${params.genomeName} .
+    """
+}
+
+// copy GTF file into resources
+process copy_gtf {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus 1
+
+    tag "Copying gtf file into resources/"
+    publishDir path:{params.resourcesDir},mode: 'symlink'
+
+    output:
+    file("*") into gtf2_ch
+    file("*") into gtf3_ch
+    file("*") into gtf4_ch
+
+    script:
+    """
+    cp ${launchDir}/resources/gtf/${params.gtfName} .
+    """
+}
+
 //// create STAR genome index
 //
 //process genome_index {
