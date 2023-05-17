@@ -516,8 +516,8 @@ process make_release {
       ${params.analysisID} \
       targets.csv \
       ${params.dataDir} \
-      ${launchDir}/${params.outputDir} \
-      ${launchDir}/${params.resourcesDir} \
+      ${params.outputDir} \
+      ${params.resourcesDir} \
       ${params.gtfName}
     """
 }
