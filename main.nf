@@ -492,29 +492,32 @@ process run_featurecounts_report {
     """
 }
 
-//// make release directory
-//
-//process make_release {
-//    container 'munozcriollojj/nf-pipeline-test:latest'
-//    cpus 1
-//
-//    tag "Making release directory"
-//    publishDir path:{params.releaseDir},mode: 'symlink'
-//
-//    input:
-//    file dummy01 from bamtoolsreport_ch.collect()
-//    file dummy02 from featurecountsreport_ch.collect()
-//    file dummy03 from markdupbam4_ch.collect()
-//    file dummy04 from multiqc1_ch
-//
-//    output:
-//    file("*") into release_ch
-//
-//    script:
-//    """
-//
-//    ${params.projectDir}/${params.srcDir}/make_release.pl ${params.projectDir} ${params.analysisID} targets.csv ${params.dataDir} ${launchDir}/${params.outputDir} ${launchDir}/${params.resourcesDir} ${params.gtfName}
-//
-//
-//    """
-//}
+// make release directory
+process make_release {
+    container 'munozcriollojj/nf-pipeline-test:latest'
+    cpus 1
+
+    tag "Making release directory"
+    publishDir path:{params.releaseDir},mode: 'symlink'
+
+    input:
+    file dummy01 from bamtoolsreport_ch.collect()
+    file dummy02 from featurecountsreport_ch.collect()
+    file dummy03 from markdupbam4_ch.collect()
+    file dummy04 from multiqc1_ch
+
+    output:
+    file("*") into release_ch
+
+    script:
+    """
+    ${params.projectDir}/${params.srcDir}/make_release.pl \
+      ${launchDir} \
+      ${params.analysisID} \
+      targets.csv \
+      ${params.dataDir} \
+      ${launchDir}/${params.outputDir} \
+      ${launchDir}/${params.resourcesDir} \
+      ${params.gtfName}
+    """
+}
