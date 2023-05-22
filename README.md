@@ -1,6 +1,7 @@
 # nextflow-tutorial
 
-This are initial notes on how to use Nextflow on a Kubernetes cluster running on Sparrow.
+This are initial notes on how to use Nextflow on a Kubernetes (k8s) cluster running
+on Sparrow.
 The workflow assumes that your pipeline is accessible through GitHub and any required
 programs are available in a container.
 
@@ -8,9 +9,23 @@ This example uses a repo hosted in the ARCCA GitHub site and a basic Nextflow co
 (https://hub.docker.com/r/nextflow/nextflow). If you need additonal tools, you need
 to prepare a custom Docker container (the ARCCA team can help you).
 
+## Installing dependencies
+Nextflow+k8s relies on creating a container (with any software required by the pipeline)
+by fetching an image from some place accessible by Nextflow (e.g. [DockerHub][docker-hub]
 
-## Running the tutorial pipeline
+In this example, we create a Docker container in the user's laptop (it is assumed that
+Docker is already available) using the Dockerfile provided in this repo. 
 
+To build an image  using the command line:
+```
+docker build --tag munozcriollojj/nf-pipeline-test:latest -f Dockerfile .
+```
+
+In the above command the tag used assumes that the image created will be pushed to the
+repo `nf-pipeline-test` located in the user's (munozcriollojj) Docker repo.
+
+
+## Setting up the environment
 Create a directory to work on, e.g:
 ```
 $ mkdir /scratch/$USER/nf-work
@@ -19,42 +34,19 @@ $ cd /scratch/$USER/nf-work
 
 Load required files:
 ```
-$ module purge
-$ module use /apps/local/modules/projects
-$ module load nextflow/21.10.6
-$ module load scwXXXX/kubernetes
-$ module list
+module purge
+module use /apps/local/modules/projects
+module load nextflow/21.10.6
+module load scwXXXX/kubernetes
+module list
 ```
 
-Clone ARCCA Nextflow turorial for k8s:
-```
-$ git clone https://github.com/ARCCA/nextflow-tutorial-k8s.git
-```
-
-At this point you should be able to run the pipeline test:
-```
-$ nextflow kuberun -latest ARCCA/nextflow-tutorial-k8s -profile k8s -n nextflow
-Pod started: lonely-perlman
-N E X T F L O W  ~  version 21.10.6
-Pulling ARCCA/nextflow-tutorial-k8s ...
- Already-up-to-date
-Launching `ARCCA/nextflow-tutorial-k8s` [lonely-perlman] - revision: c32a5e1ac4 [master]
-[e6/f1caf5] Submitted process > splitLetters
-[77/82b6b1] Submitted process > convertToUpper (1)
-[c3/c14fe2] Submitted process > convertToUpper (2)
-HELLO
-WORLD!
-```
-
-The above command launches a pod on the Kubernetes cluster running on Sparrow and executes
-the tutorial pipeline.
-
-
-# Accessing the data
-To access the data, launch an interactive pod:
+### Transferring data to and from the Kubernetes cluster
+The k8s cluster has a storage volume attached. To access the data in this volume, we need
+to create an interactive pod:
 ```
 $ nextflow kuberun login -profile k8s
-Pod started: festering-gutenberg
+Pod started: nostalgic-nightingale
 bash-4.2#
 bash-4.2# pwd
 /scw1162-data/hawk.username
@@ -65,22 +57,48 @@ nextflow.config  work
 At this point you can explore the data that was produced by the nextflow pipeline.
 Note: the pod will be terminated when you disconnect.
 ```
-bash-4.2# ls work/e6/f1caf5513c2d317c64346dd1760f0d/
-chunk_aa  chunk_ab
+$ bash-4.2# ls -l output/
+total 4
+lrwxrwxrwx 1 root root 89 May 17 11:51 all.markdup.genecount.txt -> /scw1162-data/c.c1045890/work/b4/eceec0dfe946c50859b51a384c76ed/all.markdup.genecount.txt
+...
 ```
+
+To copy data from Hawk to the k8s storage volume:
+```
+cat testData/nSEP01-00303-S01-WB-c-0hr_S15_L001_R1_001.fastq.gz | kubectl exec -i nostalgic-nightingale -n nextflow -- tee /scw1162-data/username/data/nSEP01-00303-S01-WB-c-0hr_S15_L001_R1_001.fastq.gz > /dev/null
+```
+
+Now, this limits the transfer to one file at a time. This can be automatised to copy all
+the files in a directory at the same time (see `transfer-data.sh` for a bit of
+inspiration on how to do this).
 
 To copy data back to Hawk you need to have a running pod (see above how to start an
-interactive pod). You need to use the name of the running pod (festering-gutenberg in
+interactive pod). You need to use the name of the running pod (nostalgic-nightingale in
 the previous example):
 ```
-$ mkdir results
-$ kubectl exec -i festering-gutenberg -n nextflow -- cat /scw1162-data/c.c1045890/work/e6/f1caf5513c2d317c64346dd1760f0d/chunk_aa > results/chunk_aa
-$ kubectl exec -i festering-gutenberg -n nextflow -- cat /scw1162-data/c.c1045890/work/e6/f1caf5513c2d317c64346dd1760f0d/chunk_ab > results/chunk_ab
-$ ls results
-chunk_aa  chunk_ab
+$ mkdir output
+$ kubectl exec -i nostalgic-nightingale -n nextflow -- cat /scw1162-data/c.c1045890/work/b4/eceec0dfe946c50859b51a384c76ed/all.markdup.genecount.txt > output/all.markdup.genecount.txt
+$ ls output/
+all.markdup.genecount.txt
 ```
 
-## Making changes (untested).
+### Running the tutorial pipeline
+Clone ARCCA Nextflow turorial for k8s and change to the scw1162 example branch:
+```
+git clone https://github.com/ARCCA/nextflow-tutorial-k8s.git
+git checkout scw1162-example
+```
+
+At this point you should be able to run the pipeline test:
+```
+nextflow kuberun -r scw1162-example -latest ARCCA/nextflow-tutorial-k8s -profile k8s -n nextflow -with-trace trace.txt
+```
+
+The above command launches a pod on the Kubernetes cluster running on Sparrow and executes
+the example pipeline.
+
+
+### Making changes (untested).
 Assuming you have a GitHub account, create a fork of this repo. Go to 
 https://github.com/ARCCA/nextflow-tutorial-k8s and click on 'fork', follow the 
 instructions to create the fork in your own repo.
@@ -104,3 +122,18 @@ instructions to create the fork in your own repo.
   nextflow kuberun -r your-branch -latest your-repo -profile test,k8s
   ```
 
+
+## Remove completed pods
+
+To remove pods completed with an `Error` status:
+```
+kubectl delete pod --field-selector=status.phase==Failed -n nextflow
+```
+
+To remove pods completed with a `Completed` status:
+```
+kubectl delete pod --field-selector=status.phase==Succeeded -n nextflow
+```
+
+
+[dockerhub]: https://hub.docker.com/
