@@ -28,8 +28,8 @@ repo `nf-pipeline-test` located in the user's (munozcriollojj) Docker repo.
 ## Setting up the environment
 Create a directory to work on, e.g:
 ```
-$ mkdir /scratch/$USER/nf-work
-$ cd /scratch/$USER/nf-work
+username@cl2(hawk)$ mkdir /scratch/$USER/nf-work
+username@cl2(hawk)$ cd /scratch/$USER/nf-work
 ```
 
 Load required files:
@@ -45,7 +45,7 @@ module list
 The k8s cluster has a storage volume attached. To access the data in this volume, we need
 to create an interactive pod:
 ```
-$ nextflow kuberun login -profile k8s
+username@cl2(hawk)$ nextflow kuberun login -profile k8s
 Pod started: nostalgic-nightingale
 bash-4.2#
 bash-4.2# pwd
@@ -55,7 +55,8 @@ nextflow.config  work
 ```
 
 At this point you can explore the data that was produced by the nextflow pipeline.
-Note: the pod will be terminated when you disconnect.
+**Note: the pod will be terminated when you disconnect** (i.e. when you type `exit`
+or <kbd>Ctrl</kbd> + <kbd>d</kbd>).
 ```
 $ bash-4.2# ls -l output/
 total 4
@@ -63,9 +64,9 @@ lrwxrwxrwx 1 root root 89 May 17 11:51 all.markdup.genecount.txt -> /scw1162-dat
 ...
 ```
 
-To copy data from Hawk to the k8s storage volume:
+To copy data from Hawk to the k8s storage volume, we can use the pod created in the previous step (i.e. `nostalgic-nightingale`). Make sure to double check your username in the commmand below:
 ```
-cat testData/nSEP01-00303-S01-WB-c-0hr_S15_L001_R1_001.fastq.gz | kubectl exec -i nostalgic-nightingale -n nextflow -- tee /scw1162-data/username/data/nSEP01-00303-S01-WB-c-0hr_S15_L001_R1_001.fastq.gz > /dev/null
+username@cl2(hawk)$ cat testData/nSEP01-00303-S01-WB-c-0hr_S15_L001_R1_001.fastq.gz | kubectl exec -i nostalgic-nightingale -- tee /scw1162-data/username/data/nSEP01-00303-S01-WB-c-0hr_S15_L001_R1_001.fastq.gz > /dev/null
 ```
 
 Now, this limits the transfer to one file at a time. This can be automatised to copy all
@@ -73,29 +74,42 @@ the files in a directory at the same time (see `transfer-data.sh` for a bit of
 inspiration on how to do this).
 
 To copy data back to Hawk you need to have a running pod (see above how to start an
-interactive pod). You need to use the name of the running pod (nostalgic-nightingale in
+interactive pod). You need to use the name of the running pod (`nostalgic-nightingale` in
 the previous example):
 ```
-$ mkdir output
-$ kubectl exec -i nostalgic-nightingale -n nextflow -- cat /scw1162-data/c.c1045890/work/b4/eceec0dfe946c50859b51a384c76ed/all.markdup.genecount.txt > output/all.markdup.genecount.txt
-$ ls output/
+username@cl2(hawk)$ mkdir output
+username@cl2(hawk)$ kubectl exec -i nostalgic-nightingale -- cat /scw1162-data/username/work/b4/eceec0dfe946c50859b51a384c76ed/all.markdup.genecount.txt > output/all.markdup.genecount.txt
+username@cl2(hawk)$ ls output/
 all.markdup.genecount.txt
 ```
 
 ### Running the tutorial pipeline
 Clone ARCCA Nextflow turorial for k8s and change to the scw1162 example branch:
 ```
-git clone https://github.com/ARCCA/nextflow-tutorial-k8s.git
-git checkout scw1162-example
+username@cl2(hawk)$ git clone https://github.com/ARCCA/nextflow-tutorial-k8s.git
+username@cl2(hawk)$ git checkout scw1162-example
 ```
 
 At this point you should be able to run the pipeline test:
 ```
-nextflow kuberun -r scw1162-example -latest ARCCA/nextflow-tutorial-k8s -profile k8s -n nextflow -with-trace trace.txt
+username@cl2(hawk)$ nextflow kuberun -r scw1162-example -latest ARCCA/nextflow-tutorial-k8s -profile k8s -with-trace trace.txt
 ```
 
 The above command launches a pod on the Kubernetes cluster running on Sparrow and executes
 the example pipeline.
+
+
+
+## Remove completed pods
+To remove pods completed with an `Error` status:
+```
+username@cl2(hawk)$ kubectl delete pod --field-selector=status.phase==Failed
+```
+
+To remove pods completed with a `Completed` status:
+```
+username@cl2(hawk)$ kubectl delete pod --field-selector=status.phase==Succeeded
+```
 
 
 ### Making changes (untested).
@@ -123,17 +137,6 @@ instructions to create the fork in your own repo.
   ```
 
 
-## Remove completed pods
-
-To remove pods completed with an `Error` status:
-```
-kubectl delete pod --field-selector=status.phase==Failed -n nextflow
-```
-
-To remove pods completed with a `Completed` status:
-```
-kubectl delete pod --field-selector=status.phase==Succeeded -n nextflow
-```
 
 
 [dockerhub]: https://hub.docker.com/
